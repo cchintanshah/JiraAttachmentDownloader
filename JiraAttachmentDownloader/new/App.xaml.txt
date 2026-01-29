@@ -659,7 +659,58 @@ public class JiraSearchResult
     public List Issues { get; set; } = new();
 }
 
+
+
 --------------------------------------------------------------
 
+
+
+
+
+
+
+
+
+
+private async Task<List<JiraIssue>> SearchIssuesAsync(string jql, CancellationToken cancellationToken)
+{
+    var allIssues = new List<JiraIssue>();
+    int startAt = 0;
+    int maxResults = 50;
+    int total;
+
+    Log("🔍 Searching Jira...");
+
+    do
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var encodedJql = HttpUtility.UrlEncode(jql);
+        var requestUrl = $"rest/api/2/search?jql={encodedJql}&startAt={startAt}&maxResults={maxResults}&fields=key,summary,attachment,assignee";
+
+        var response = await _httpClient.GetAsync(requestUrl, cancellationToken);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Jira API returned {response.StatusCode}: {errorContent}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        var searchResult = JsonSerializer.Deserialize<JiraSearchResult>(json);
+
+        if (searchResult == null) break;
+
+        allIssues.AddRange(searchResult.Issues);
+        total = searchResult.Total;
+        startAt += maxResults;
+
+        Log($"   📊 Fetched {allIssues.Count}/{total} issues...");
+        UpdateStatus($"Fetching issues: {allIssues.Count}/{total}");
+
+    } while (startAt < total);
+
+    return allIssues;
+}
 
 
