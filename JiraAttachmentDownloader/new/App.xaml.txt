@@ -1,0 +1,665 @@
+App.xml
+----------------------
+
+<Application x:Class="JiraAttachmentDownloader.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- Global Styles -->
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Application.Resources>
+</Application>
+
+
+----------------------------------------------
+
+App.xaml.cs
+-----------------------------------------------
+
+
+using System.Windows;
+
+namespace JiraAttachmentDownloader
+{
+    public partial class App : Application
+    {
+    }
+}
+
+-----------------------------------------------
+MainWindow.xaml
+------------------------------------------------
+<Window x:Class="JiraAttachmentDownloader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Jira Attachment Downloader" 
+        Height="650" Width="700"
+        MinHeight="600" MinWidth="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#1e1e2e">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   Text="🎫 Jira Attachment Downloader" 
+                   FontSize="24" FontWeight="Bold" 
+                   Foreground="#cdd6f4" 
+                   Margin="0,0,0,20"/>
+
+        <!-- Jira Base URL -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <TextBlock Text="Jira Base URL" Foreground="#a6adc8" Margin="0,0,0,4" FontWeight="SemiBold"/>
+            <TextBox x:Name="txtBaseUrl" 
+                     Text="https://track.rbc.com"
+                     Background="#313244" Foreground="#cdd6f4" 
+                     BorderBrush="#45475a" BorderThickness="1"/>
+        </StackPanel>
+
+        <!-- Personal Access Token -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <TextBlock Text="Personal Access Token" Foreground="#a6adc8" Margin="0,0,0,4" FontWeight="SemiBold"/>
+            <PasswordBox x:Name="txtPat" 
+                         Background="#313244" Foreground="#cdd6f4" 
+                         BorderBrush="#45475a" BorderThickness="1"/>
+        </StackPanel>
+
+        <!-- JQL Query -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,12">
+            <TextBlock Text="JQL Query" Foreground="#a6adc8" Margin="0,0,0,4" FontWeight="SemiBold"/>
+            <TextBox x:Name="txtJqlQuery" 
+                     Text="project = MYPROJECT AND attachments IS NOT EMPTY"
+                     Background="#313244" Foreground="#cdd6f4" 
+                     BorderBrush="#45475a" BorderThickness="1"
+                     TextWrapping="Wrap" Height="50" 
+                     AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+
+        <!-- Download Path -->
+        <StackPanel Grid.Row="4" Margin="0,0,0,16">
+            <TextBlock Text="Download Path" Foreground="#a6adc8" Margin="0,0,0,4" FontWeight="SemiBold"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="txtDownloadPath" 
+                         Text="D:\downloads\attachments"
+                         Background="#313244" Foreground="#cdd6f4" 
+                         BorderBrush="#45475a" BorderThickness="1"/>
+                <Button Grid.Column="1" Content="📁 Browse..." 
+                        Click="BtnBrowse_Click"
+                        Background="#45475a" Foreground="#cdd6f4"
+                        BorderThickness="0" Margin="8,0,0,0"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Progress Section -->
+        <StackPanel Grid.Row="5" Margin="0,0,0,12">
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="txtStatus" Text="Ready" Foreground="#a6adc8"/>
+                <TextBlock x:Name="txtProgress" Text="0%" Foreground="#89b4fa" Grid.Column="1" FontWeight="Bold"/>
+            </Grid>
+            <ProgressBar x:Name="progressBar" 
+                         Height="8" 
+                         Background="#313244" 
+                         Foreground="#89b4fa"
+                         BorderThickness="0"
+                         Value="0" Maximum="100"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,0,0,16">
+            <Button x:Name="btnDownload" 
+                    Content="⬇️ Download Attachments" 
+                    Click="BtnDownload_Click"
+                    Background="#89b4fa" Foreground="#1e1e2e"
+                    FontWeight="Bold" BorderThickness="0"
+                    Width="200"/>
+            <Button x:Name="btnCancel" 
+                    Content="🛑 Cancel" 
+                    Click="BtnCancel_Click"
+                    Background="#f38ba8" Foreground="#1e1e2e"
+                    FontWeight="Bold" BorderThickness="0"
+                    Margin="10,0,0,0" IsEnabled="False"
+                    Width="100"/>
+            <Button x:Name="btnClear" 
+                    Content="🗑️ Clear Log" 
+                    Click="BtnClear_Click"
+                    Background="#45475a" Foreground="#cdd6f4"
+                    BorderThickness="0"
+                    Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <!-- Log Output -->
+        <StackPanel Grid.Row="7">
+            <TextBlock Text="Log Output" Foreground="#a6adc8" Margin="0,0,0,4" FontWeight="SemiBold"/>
+            <Border Background="#11111b" BorderBrush="#45475a" BorderThickness="1" CornerRadius="4">
+                <ScrollViewer x:Name="logScroller" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="txtLog" 
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             Background="Transparent" 
+                             Foreground="#a6e3a1"
+                             BorderThickness="0"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             Padding="10"
+                             VerticalAlignment="Stretch"/>
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Window>
+
+------------------------------------------------------------------------
+
+
+MainWindow.xaml.cs
+-------------------------------------------
+
+
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Web;
+using System.Windows;
+using Microsoft.Win32;
+using JiraAttachmentDownloader.Models;
+using JiraAttachmentDownloader.Services;
+
+namespace JiraAttachmentDownloader
+{
+    public partial class MainWindow : Window
+    {
+        private CancellationTokenSource? _cts;
+        private readonly HttpClient _httpClient;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            
+            // Create HttpClient with SSL bypass for self-signed certs
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            };
+            _httpClient = new HttpClient(handler);
+        }
+
+        private void BtnBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Select Download Folder"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                txtDownloadPath.Text = dialog.FolderName;
+            }
+        }
+
+        private async void BtnDownload_Click(object sender, RoutedEventArgs e)
+        {
+            // Validate inputs
+            if (string.IsNullOrWhiteSpace(txtBaseUrl.Text))
+            {
+                MessageBox.Show("Please enter the Jira Base URL", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(txtPat.Password))
+            {
+                MessageBox.Show("Please enter your Personal Access Token", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(txtJqlQuery.Text))
+            {
+                MessageBox.Show("Please enter a JQL Query", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(txtDownloadPath.Text))
+            {
+                MessageBox.Show("Please select a download path", "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Setup
+            _cts = new CancellationTokenSource();
+            SetUIState(isDownloading: true);
+            ClearLog();
+
+            try
+            {
+                // Configure HttpClient
+                _httpClient.BaseAddress = new Uri(txtBaseUrl.Text.TrimEnd('/') + "/");
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", txtPat.Password);
+                _httpClient.DefaultRequestHeaders.Accept.Clear();
+                _httpClient.DefaultRequestHeaders.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+
+                await DownloadAttachmentsAsync(_cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Log("🛑 Download cancelled by user.");
+            }
+            catch (Exception ex)
+            {
+                Log($"❌ Error: {ex.Message}");
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetUIState(isDownloading: false);
+                _httpClient.DefaultRequestHeaders.Clear();
+                // Reset base address for next run
+                var field = typeof(HttpClient).GetField("_baseAddress", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                field?.SetValue(_httpClient, null);
+            }
+        }
+
+        private async Task DownloadAttachmentsAsync(CancellationToken cancellationToken)
+        {
+            var downloadPath = txtDownloadPath.Text;
+            var jql = txtJqlQuery.Text;
+
+            Log("╔════════════════════════════════════════════════════════════╗");
+            Log("║        JIRA ATTACHMENT DOWNLOADER - Starting               ║");
+            Log("╚════════════════════════════════════════════════════════════╝");
+            Log($"📁 Download Path: {downloadPath}");
+            Log($"🔗 Jira URL: {txtBaseUrl.Text}");
+            Log($"📝 JQL Query: {jql}");
+            Log("─────────────────────────────────────────────────────────────");
+
+            // Create download directory
+            Directory.CreateDirectory(downloadPath);
+
+            // Search for issues
+            UpdateStatus("Searching for issues...");
+            var issues = await SearchIssuesAsync(jql, cancellationToken);
+
+            var issuesWithAttachments = issues.Where(i => i.Fields?.Attachments?.Count > 0).ToList();
+            var totalAttachments = issuesWithAttachments.Sum(i => i.Fields?.Attachments?.Count ?? 0);
+
+            Log($"📊 Found {issues.Count} issues, {issuesWithAttachments.Count} have attachments");
+            Log($"📎 Total attachments to download: {totalAttachments}");
+            Log("─────────────────────────────────────────────────────────────");
+
+            if (totalAttachments == 0)
+            {
+                Log("⚠️ No attachments found matching the JQL query.");
+                UpdateStatus("Complete - No attachments found");
+                return;
+            }
+
+            int downloadedCount = 0;
+            int failedCount = 0;
+            long totalBytes = 0;
+            int currentAttachment = 0;
+
+            foreach (var issue in issuesWithAttachments)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var issueKey = issue.Key;
+                var assigneeName = issue.Fields?.Assignee?.BestName ?? "Unassigned";
+                var attachments = issue.Fields?.Attachments ?? new List();
+
+                Log("");
+                Log($"📌 Processing: {issueKey} - {TruncateString(issue.Fields?.Summary ?? "No Summary", 40)}");
+                Log($"   👤 Assignee: {assigneeName}");
+                Log($"   📎 Attachments: {attachments.Count}");
+
+                // Create folder: IssueKey - Assignee
+                var folderName = SanitizeFileName($"{issueKey} - {assigneeName}");
+                var issueFolderPath = Path.Combine(downloadPath, folderName);
+                Directory.CreateDirectory(issueFolderPath);
+
+                foreach (var attachment in attachments)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    currentAttachment++;
+
+                    var filePath = Path.Combine(issueFolderPath, SanitizeFileName(attachment.Filename));
+                    var fileSize = FormatFileSize(attachment.Size);
+                    var overallProgress = (int)((currentAttachment * 100) / totalAttachments);
+
+                    UpdateStatus($"Downloading: {issueKey}/{attachment.Filename}");
+                    UpdateProgress(overallProgress);
+
+                    try
+                    {
+                        Log($"   ⬇️  {attachment.Filename} ({fileSize})");
+
+                        using var response = await _httpClient.GetAsync(attachment.ContentUrl, 
+                            HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                        response.EnsureSuccessStatusCode();
+
+                        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                        await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+                        var buffer = new byte[81920];
+                        long totalRead = 0;
+                        int bytesRead;
+
+                        while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+                        {
+                            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                            totalRead += bytesRead;
+
+                            // Update file progress
+                            if (attachment.Size > 0)
+                            {
+                                var fileProgress = (int)((totalRead * 100) / attachment.Size);
+                                UpdateStatus($"Downloading: {issueKey}/{attachment.Filename} ({fileProgress}%)");
+                            }
+                        }
+
+                        downloadedCount++;
+                        totalBytes += totalRead;
+                        Log($"   ✅ Saved: {attachment.Filename}");
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        failedCount++;
+                        Log($"   ❌ Failed: {attachment.Filename} - {ex.Message}");
+                    }
+                }
+            }
+
+            // Summary
+            UpdateProgress(100);
+            Log("");
+            Log("═════════════════════════════════════════════════════════════");
+            Log("                    DOWNLOAD COMPLETE                        ");
+            Log("═════════════════════════════════════════════════════════════");
+            Log($"✅ Downloaded: {downloadedCount} files");
+            Log($"❌ Failed: {failedCount} files");
+            Log($"💾 Total Size: {FormatFileSize(totalBytes)}");
+            Log($"📁 Location: {downloadPath}");
+            Log("═════════════════════════════════════════════════════════════");
+
+            UpdateStatus($"Complete! Downloaded {downloadedCount} files ({FormatFileSize(totalBytes)})");
+        }
+
+        private async Task> SearchIssuesAsync(string jql, CancellationToken cancellationToken)
+        {
+            var allIssues = new List();
+            int startAt = 0;
+            int maxResults = 50;
+            int total;
+
+            Log("🔍 Searching Jira...");
+
+            do
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var encodedJql = HttpUtility.UrlEncode(jql);
+                var requestUrl = $"rest/api/2/search?jql={encodedJql}&startAt={startAt}&maxResults={maxResults}&fields=key,summary,attachment,assignee";
+
+                var response = await _httpClient.GetAsync(requestUrl, cancellationToken);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new HttpRequestException($"Jira API returned {response.StatusCode}: {errorContent}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var searchResult = JsonSerializer.Deserialize(json);
+
+                if (searchResult == null) break;
+
+                allIssues.AddRange(searchResult.Issues);
+                total = searchResult.Total;
+                startAt += maxResults;
+
+                Log($"   📊 Fetched {allIssues.Count}/{total} issues...");
+                UpdateStatus($"Fetching issues: {allIssues.Count}/{total}");
+
+            } while (startAt < total);
+
+            return allIssues;
+        }
+
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            _cts?.Cancel();
+            Log("⚠️ Cancellation requested...");
+        }
+
+        private void BtnClear_Click(object sender, RoutedEventArgs e)
+        {
+            ClearLog();
+        }
+
+        private void SetUIState(bool isDownloading)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                btnDownload.IsEnabled = !isDownloading;
+                btnCancel.IsEnabled = isDownloading;
+                txtBaseUrl.IsEnabled = !isDownloading;
+                txtPat.IsEnabled = !isDownloading;
+                txtJqlQuery.IsEnabled = !isDownloading;
+                txtDownloadPath.IsEnabled = !isDownloading;
+
+                if (!isDownloading)
+                {
+                    progressBar.Value = 0;
+                }
+            });
+        }
+
+        private void Log(string message)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                txtLog.AppendText(message + Environment.NewLine);
+                logScroller.ScrollToEnd();
+            });
+        }
+
+        private void ClearLog()
+        {
+            Dispatcher.Invoke(() => txtLog.Clear());
+        }
+
+        private void UpdateStatus(string status)
+        {
+            Dispatcher.Invoke(() => txtStatus.Text = status);
+        }
+
+        private void UpdateProgress(int percent)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                progressBar.Value = percent;
+                txtProgress.Text = $"{percent}%";
+            });
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            int order = 0;
+            double size = bytes;
+            while (size >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                size /= 1024;
+            }
+            return $"{size:0.##} {sizes[order]}";
+        }
+
+        private static string SanitizeFileName(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            return string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private static string TruncateString(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+            return value.Length <= maxLength ? value : value[..(maxLength - 3)] + "...";
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------
+
+
+Models/JiraAttachment.cs
+----------------------------------------------------------------------
+
+using System.Text.Json.Serialization;
+
+namespace JiraAttachmentDownloader.Models;
+
+public class JiraAttachment
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("filename")]
+    public string Filename { get; set; } = string.Empty;
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+    [JsonPropertyName("mimeType")]
+    public string MimeType { get; set; } = string.Empty;
+
+    [JsonPropertyName("content")]
+    public string ContentUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("created")]
+    public string? Created { get; set; }
+
+    [JsonPropertyName("author")]
+    public JiraUser? Author { get; set; }
+}
+
+public class JiraUser
+{
+    [JsonPropertyName("displayName")]
+    public string DisplayName { get; set; } = string.Empty;
+
+    [JsonPropertyName("emailAddress")]
+    public string? EmailAddress { get; set; }
+}
+
+
+----------------------------------------------------------
+Models/JiraIssue.cs
+------------------------------------------------------
+
+using System.Text.Json.Serialization;
+
+namespace JiraAttachmentDownloader.Models;
+
+public class JiraIssue
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("key")]
+    public string Key { get; set; } = string.Empty;
+
+    [JsonPropertyName("self")]
+    public string Self { get; set; } = string.Empty;
+
+    [JsonPropertyName("fields")]
+    public JiraIssueFields? Fields { get; set; }
+}
+
+public class JiraIssueFields
+{
+    [JsonPropertyName("summary")]
+    public string Summary { get; set; } = string.Empty;
+
+    [JsonPropertyName("attachment")]
+    public List Attachments { get; set; } = new();
+
+    [JsonPropertyName("assignee")]
+    public JiraAssignee? Assignee { get; set; }
+}
+
+public class JiraAssignee
+{
+    [JsonPropertyName("displayName")]
+    public string? DisplayName { get; set; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("key")]
+    public string? Key { get; set; }
+
+    [JsonPropertyName("emailAddress")]
+    public string? EmailAddress { get; set; }
+
+    [JsonIgnore]
+    public string BestName => DisplayName ?? Name ?? Key ?? "Unassigned";
+}
+
+---------------------------------------------------------------------
+
+
+Models/JiraSearchResult.cs
+-----------------------------------------------------------------
+
+using System.Text.Json.Serialization;
+
+namespace JiraAttachmentDownloader.Models;
+
+public class JiraSearchResult
+{
+    [JsonPropertyName("startAt")]
+    public int StartAt { get; set; }
+
+    [JsonPropertyName("maxResults")]
+    public int MaxResults { get; set; }
+
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    [JsonPropertyName("issues")]
+    public List Issues { get; set; } = new();
+}
+
+--------------------------------------------------------------
+
+
+
